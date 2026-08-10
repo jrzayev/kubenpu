@@ -13,6 +13,8 @@
 
 char LICENSE[] SEC("license") = "GPL";
 
+const struct event *unused_event __attribute__((unused));
+
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, MAX_ENTRIES_DEVICES);

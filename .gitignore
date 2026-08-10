@@ -1,0 +1,4 @@
+.idea
+*.md
+CMakeLists.txt
+!README.md
