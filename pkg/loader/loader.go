@@ -31,6 +31,11 @@ type Event struct {
 }
 
 func NewLoader() (*Loader, error) {
+	err := CheckKernel()
+	if err != nil {
+		return nil, err
+	}
+
 	if err := rlimit.RemoveMemlock(); err != nil {
 		return nil, fmt.Errorf("failed to remove memlock rlimit: %w", err)
 	}
