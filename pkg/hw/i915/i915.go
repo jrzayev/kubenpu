@@ -4,4 +4,31 @@
 
 package i915
 
+import (
+	"github.com/jrzayev/kubenpu/pkg/discovery"
+	"github.com/jrzayev/kubenpu/pkg/hw"
+)
+
 type Vendor struct{}
+
+func init() {
+	hw.RegisterVendor(&Vendor{})
+}
+
+func (v *Vendor) Name() string {
+	return "i915"
+}
+
+func (v *Vendor) Match(d discovery.Device) bool {
+	return d.DriverName == "i915"
+}
+
+func (v *Vendor) Weight(cmd uint32, payload []byte) uint64 {
+	return 0
+}
+
+func (v *Vendor) DeviceStats(d discovery.Device) (hw.Stats, error) {
+	return hw.Stats{}, hw.ErrNotSupported
+}
+
+var _ hw.Vendor = (*Vendor)(nil)

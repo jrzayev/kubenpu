@@ -15,7 +15,9 @@ import (
 
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/jrzayev/kubenpu/pkg/discovery"
-	"github.com/jrzayev/kubenpu/pkg/hw/i915"
+	"github.com/jrzayev/kubenpu/pkg/hw"
+	_ "github.com/jrzayev/kubenpu/pkg/hw/i915"
+	_ "github.com/jrzayev/kubenpu/pkg/hw/ivpu"
 	"github.com/jrzayev/kubenpu/pkg/loader"
 )
 
@@ -61,20 +63,27 @@ func main() {
 		log.Fatal(err)
 	}
 	for _, device := range devices {
+		vendor := hw.GetVendor(device)
+		if vendor == nil {
+			log.Printf("Found unknown device: %v", device)
+			continue
+		}
+
+		vendorID := hw.GetVendorID(vendor.Name())
+
 		for _, node := range device.Nodes {
-			err = l.AddDevice(node.Major, node.Minor, 85)
+			err = l.AddDevice(node.Major, node.Minor, vendorID)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-	}
 
-	m := &i915.Vendor{}
-	kinds := m.Ioctls()
-	for key := range kinds {
-		err = l.AddIoctl(85, key, uint8(kinds[key]))
-		if err != nil {
-			log.Fatal(err)
+		kinds := vendor.Ioctls()
+		for key, val := range kinds {
+			err = l.AddIoctl(vendorID, key, uint8(val))
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 
