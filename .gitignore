@@ -1,4 +1,3 @@
 .idea
-*.md
 CMakeLists.txt
-!README.md
+bin/

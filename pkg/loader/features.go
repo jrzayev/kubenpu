@@ -36,7 +36,7 @@ func CheckKernel() error {
 		return fmt.Errorf("failed to check kernel support for ring buffer: %w", err)
 	}
 
-	err = features.HaveProgramHelper(ebpf.Tracing, asm.FnKtimeGetTaiNs)
+	err = features.HaveProgramHelper(ebpf.Kprobe, asm.FnKtimeGetTaiNs)
 	if err != nil {
 		if errors.Is(err, ebpf.ErrNotSupported) {
 			return errors.New("bpf_ktime_get_tai_ns is not supported; required kernel version: 6.1+")

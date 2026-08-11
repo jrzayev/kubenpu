@@ -1,0 +1,5 @@
+DRIVER=panthor
+OF_NAME=gpu
+OF_FULLNAME=/soc/gpu@fb000000
+OF_COMPATIBLE_0=rockchip,rk3588-mali
+MODALIAS=of:NgpuT(null)Crockchip,rk3588-mali

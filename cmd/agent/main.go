@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/cilium/ebpf/ringbuf"
+	"github.com/jrzayev/kubenpu/pkg/discovery"
 	"github.com/jrzayev/kubenpu/pkg/hw/i915"
 	"github.com/jrzayev/kubenpu/pkg/loader"
 )
@@ -48,9 +49,24 @@ func main() {
 		}
 	}(l)
 
-	err = l.AddDevice(226, 128, 85)
+	paths := discovery.Paths{
+		DriPath:        "/dev/dri",
+		AccelPath:      "/dev/accel",
+		SysfsDriPath:   "/sys/class/drm",
+		SysfsAccelPath: "/sys/class/accel",
+	}
+
+	devices, err := discovery.Discover(paths)
 	if err != nil {
 		log.Fatal(err)
+	}
+	for _, device := range devices {
+		for _, node := range device.Nodes {
+			err = l.AddDevice(node.Major, node.Minor, 85)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
 
 	m := &i915.Vendor{}
