@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/jrzayev/kubenpu/pkg/discovery"
@@ -19,6 +20,7 @@ import (
 	_ "github.com/jrzayev/kubenpu/pkg/hw/i915"
 	_ "github.com/jrzayev/kubenpu/pkg/hw/ivpu"
 	"github.com/jrzayev/kubenpu/pkg/loader"
+	"github.com/jrzayev/kubenpu/pkg/podmap"
 )
 
 func printVersion() {
@@ -92,6 +94,18 @@ func main() {
 		log.Fatal(err)
 	}
 
+	p, err := podmap.NewPodMap("/sys/fs/cgroup", "/run/k3s/containerd/containerd.sock", 5*time.Second)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func(podMap *podmap.PodMap) {
+		err := podMap.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}(p)
+
 	err = l.CreateReader()
 	if err != nil {
 		log.Fatal(err)
@@ -120,6 +134,25 @@ func main() {
 			log.Print(err)
 			continue
 		}
-		fmt.Println("Event received", event.Kind, event.CgroupID, event.TGID)
+		cI, err := p.ContainerInfo(event.CgroupID)
+		if errors.Is(err, podmap.ErrNotPod) {
+			continue
+		}
+
+		if errors.Is(err, podmap.ErrNotIndexed) {
+			continue
+		}
+
+		if errors.Is(err, podmap.ErrContainerNotFound) {
+			continue
+		}
+
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+
+		fmt.Println("Event received", event.Kind, event.CgroupID, event.TGID,
+			cI.Namespace, cI.PodName, cI.ContainerName)
 	}
 }

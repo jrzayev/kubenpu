@@ -7,6 +7,7 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/asm"
@@ -14,7 +15,16 @@ import (
 	"github.com/cilium/ebpf/features"
 )
 
+func isCgroupV2() bool {
+	_, err := os.Stat("/sys/fs/cgroup/cgroup.controllers")
+	return err == nil
+}
+
 func CheckKernel() error {
+	if !isCgroupV2() {
+		return errors.New("cgroup v2 required")
+	}
+
 	_, err := btf.LoadKernelSpec()
 	if err != nil {
 		return fmt.Errorf("kernel BTF is not available; required for CO-RE and fentry: %w", err)

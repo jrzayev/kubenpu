@@ -6,7 +6,6 @@ package hw
 
 type Kind int
 
-
 const (
 	KindUnknown Kind = iota // Was added specially if somehow we will not check and we will get an unknown kind
 	KindSubmit
