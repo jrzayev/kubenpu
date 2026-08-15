@@ -8,18 +8,29 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
+
+type cacheEntry struct {
+	info     ContainerInfo
+	storedAt time.Time
+}
 
 type PodMap struct {
 	index *Index
 	cri   *CRIClient
 
-	mu    sync.RWMutex
-	cache map[uint64]ContainerInfo
+	mu       sync.RWMutex
+	cache    map[uint64]cacheEntry
+	cacheTTL time.Duration
+
+	cgroupIndexRebuilds atomic.Uint64
 }
 
-func NewPodMap(cgroupRoot string, criSocket string, interval time.Duration) (*PodMap, error) {
+func NewPodMap(cgroupRoot string, criSocket string,
+	interval time.Duration, criTimeout time.Duration,
+	cacheTTL time.Duration) (*PodMap, error) {
 	if cgroupRoot == "" {
 		return nil, errors.New("cgroup root is empty")
 	}
@@ -32,20 +43,25 @@ func NewPodMap(cgroupRoot string, criSocket string, interval time.Duration) (*Po
 		return nil, errors.New("interval must be positive")
 	}
 
+	if cacheTTL <= 0 {
+		return nil, errors.New("cache TTL must be positive")
+	}
+
 	index, err := BuildCgroupIndex(cgroupRoot, interval)
 	if err != nil {
 		return nil, fmt.Errorf("build cgroup index: %w", err)
 	}
 
-	cri, err := NewCRIClient(criSocket)
+	cri, err := NewCRIClient(criSocket, criTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("create CRI client: %w", err)
 	}
 
 	return &PodMap{
-		index: index,
-		cri:   cri,
-		cache: make(map[uint64]ContainerInfo),
+		index:    index,
+		cri:      cri,
+		cache:    make(map[uint64]cacheEntry),
+		cacheTTL: cacheTTL,
 	}, nil
 }
 
@@ -55,11 +71,11 @@ func (p *PodMap) ContainerInfo(cgroupID uint64) (ContainerInfo, error) {
 	}
 
 	p.mu.RLock()
-	info, ok := p.cache[cgroupID]
+	entry, ok := p.cache[cgroupID]
 	p.mu.RUnlock()
 
-	if ok {
-		return info, nil
+	if ok && time.Since(entry.storedAt) < p.cacheTTL {
+		return entry.info, nil
 	}
 
 	ids, err := p.index.ParseCgroupToIDs(cgroupID)
@@ -68,9 +84,12 @@ func (p *PodMap) ContainerInfo(cgroupID uint64) (ContainerInfo, error) {
 		if rerr != nil {
 			return ContainerInfo{}, fmt.Errorf("rebuild cgroup index: %w", rerr)
 		}
+
 		if !rebuilt {
 			return ContainerInfo{}, err
 		}
+
+		p.cgroupIndexRebuilds.Add(1)
 
 		p.mu.Lock()
 		clear(p.cache)
@@ -84,16 +103,20 @@ func (p *PodMap) ContainerInfo(cgroupID uint64) (ContainerInfo, error) {
 		return ContainerInfo{}, fmt.Errorf("parse cgroup %d: %w", cgroupID, err)
 	}
 
-	info, err = p.cri.ContainerNames(ids.ContainerID)
+	info, err := p.cri.ContainerNames(ids.ContainerID)
 	if err != nil {
 		return ContainerInfo{}, fmt.Errorf("get container info for cgroup %d: %w", cgroupID, err)
 	}
 
 	p.mu.Lock()
-	p.cache[cgroupID] = info
+	p.cache[cgroupID] = cacheEntry{info: info, storedAt: time.Now()}
 	p.mu.Unlock()
 
 	return info, nil
+}
+
+func (p *PodMap) CgroupIndexRebuilds() uint64 {
+	return p.cgroupIndexRebuilds.Load()
 }
 
 func (p *PodMap) Close() error {

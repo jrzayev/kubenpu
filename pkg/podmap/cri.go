@@ -31,11 +31,12 @@ type ContainerInfo struct {
 }
 
 type CRIClient struct {
-	conn   *grpc.ClientConn
-	client runtime.RuntimeServiceClient
+	conn       *grpc.ClientConn
+	client     runtime.RuntimeServiceClient
+	criTimeout time.Duration
 }
 
-func NewCRIClient(socket string) (*CRIClient, error) {
+func NewCRIClient(socket string, criTimeout time.Duration) (*CRIClient, error) {
 	if socket == "" {
 		return nil, errors.New("CRI socket is empty")
 	}
@@ -52,11 +53,12 @@ func NewCRIClient(socket string) (*CRIClient, error) {
 	}
 
 	client := &CRIClient{
-		conn:   conn,
-		client: runtime.NewRuntimeServiceClient(conn),
+		conn:       conn,
+		client:     runtime.NewRuntimeServiceClient(conn),
+		criTimeout: criTimeout,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), criTimeout)
 	defer cancel()
 
 	_, err = client.client.Version(ctx, &runtime.VersionRequest{})
@@ -74,7 +76,7 @@ func (c *CRIClient) ContainerNames(containerID string) (ContainerInfo, error) {
 	}
 
 	newCtx := context.Background()
-	ctx, cancel := context.WithTimeout(newCtx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(newCtx, c.criTimeout)
 	defer cancel()
 
 	resp, err := c.client.ContainerStatus(ctx, &runtime.ContainerStatusRequest{

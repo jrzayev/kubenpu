@@ -34,6 +34,13 @@ struct {
   __uint(max_entries, MAX_ENTRIES_EVENTS);
 } events SEC(".maps");
 
+struct {
+  __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+  __uint(max_entries, 1);
+  __type(key, __u32);
+  __type(value, __u64);
+} dropped SEC(".maps");
+
 
 SEC("fentry/drm_ioctl")
 int BPF_PROG(kubenpu_ioctl, struct file *filp, unsigned int cmd, unsigned long arg) {
@@ -58,6 +65,11 @@ int BPF_PROG(kubenpu_ioctl, struct file *filp, unsigned int cmd, unsigned long a
 
   struct event* poll_event = bpf_ringbuf_reserve(&events, sizeof(struct event), 0);
   if (!poll_event) {
+    __u32 zero = 0;
+    __u64 *lost = bpf_map_lookup_elem(&dropped, &zero);
+    if (lost) {
+      *lost += 1;
+    }
     return 0;
   }
 

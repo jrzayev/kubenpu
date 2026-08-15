@@ -5,12 +5,8 @@
 package hw
 
 import (
-	"hash/fnv"
-
 	"github.com/jrzayev/kubenpu/pkg/discovery"
 )
-
-const fallbackVendorID uint32 = 1
 
 var registeredVendors []Vendor
 
@@ -28,13 +24,11 @@ func GetVendor(d discovery.Device) Vendor {
 }
 
 func GetVendorID(vendorName string) uint32 {
-	h := fnv.New32a()
-	_, _ = h.Write([]byte(vendorName))
-
-	id := h.Sum32()
-	if id == 0 {
-		return fallbackVendorID
+	for i, vendor := range registeredVendors {
+		if vendor.Name() == vendorName {
+			return uint32(i) + 1
+		}
 	}
 
-	return id
+	return 0
 }

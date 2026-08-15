@@ -7,8 +7,10 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"unsafe"
 
+	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
@@ -18,6 +20,9 @@ type Loader struct {
 	bpfObjects bpfObjects
 	hook       link.Link
 	rb         *ringbuf.Reader
+
+	closeOnce       sync.Once
+	closeReaderOnce sync.Once
 }
 
 type Event struct {
@@ -30,7 +35,7 @@ type Event struct {
 	Kind      uint8
 }
 
-func NewLoader() (*Loader, error) {
+func NewLoader(debug bool) (*Loader, error) {
 	err := CheckKernel()
 	if err != nil {
 		return nil, err
@@ -41,7 +46,23 @@ func NewLoader() (*Loader, error) {
 	}
 
 	l := &Loader{}
-	if err := loadBpfObjects(&l.bpfObjects, nil); err != nil {
+	var opt *ebpf.CollectionOptions
+
+	if debug {
+		opt = &ebpf.CollectionOptions{
+			Programs: ebpf.ProgramOptions{
+				LogLevel:     ebpf.LogLevelInstruction,
+				LogSizeStart: 64 * 1024,
+			},
+		}
+	}
+
+	if err := loadBpfObjects(&l.bpfObjects, opt); err != nil {
+		var verifierErr *ebpf.VerifierError
+		if errors.As(err, &verifierErr) {
+			return nil, fmt.Errorf("failed to load bpf objects: %+v", verifierErr)
+		}
+
 		return nil, fmt.Errorf("failed to load bpf objects: %w", err)
 	}
 
@@ -134,26 +155,55 @@ func (l *Loader) ReadEvent() (Event, error) {
 	}, nil
 }
 
+func (l *Loader) CloseReader() error {
+	var err error
+
+	l.closeReaderOnce.Do(func() {
+		if l.rb == nil {
+			return
+		}
+		if cerr := l.rb.Close(); cerr != nil {
+			err = fmt.Errorf("failed to close ring buffer reader: %w", cerr)
+		}
+	})
+
+	return err
+}
+
 func (l *Loader) Close() error {
 	var errs []error
 
-	if l.rb != nil {
-		if err := l.rb.Close(); err != nil {
-			errs = append(errs, fmt.Errorf("failed to close ring buffer reader: %w", err))
+	l.closeOnce.Do(func() {
+		if err := l.CloseReader(); err != nil {
+			errs = append(errs, err)
 		}
-		l.rb = nil
-	}
 
-	if l.hook != nil {
-		if err := l.hook.Close(); err != nil {
-			errs = append(errs, fmt.Errorf("failed to close hook: %w", err))
+		if l.hook != nil {
+			if err := l.hook.Close(); err != nil {
+				errs = append(errs, fmt.Errorf("failed to close hook: %w", err))
+			}
 		}
-		l.hook = nil
-	}
 
-	if err := l.bpfObjects.Close(); err != nil {
-		errs = append(errs, fmt.Errorf("failed to close bpf objects: %w", err))
-	}
+		if err := l.bpfObjects.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close bpf objects: %w", err))
+		}
+	})
 
 	return errors.Join(errs...)
+}
+
+func (l *Loader) DroppedEvents() (uint64, error) {
+	var perCPU []uint64
+
+	key := uint32(0)
+	if err := l.bpfObjects.Dropped.Lookup(&key, &perCPU); err != nil {
+		return 0, fmt.Errorf("read dropped counter: %w", err)
+	}
+
+	var total uint64
+	for _, v := range perCPU {
+		total += v
+	}
+
+	return total, nil
 }

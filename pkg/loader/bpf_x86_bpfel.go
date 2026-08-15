@@ -42,6 +42,7 @@ type bpfIoctlKey struct {
 // Used for safe lookups in a Collection or CollectionSpec.
 const (
 	bpfMapDevices       = "devices"
+	bpfMapDropped       = "dropped"
 	bpfMapEvents        = "events"
 	bpfMapIoctls        = "ioctls"
 	bpfProgKubenpuIoctl = "kubenpu_ioctl"
@@ -98,6 +99,7 @@ type bpfProgramSpecs struct {
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpfMapSpecs struct {
 	Devices *ebpf.MapSpec `ebpf:"devices"`
+	Dropped *ebpf.MapSpec `ebpf:"dropped"`
 	Events  *ebpf.MapSpec `ebpf:"events"`
 	Ioctls  *ebpf.MapSpec `ebpf:"ioctls"`
 }
@@ -130,6 +132,7 @@ func (o *bpfObjects) Close() error {
 // It can be passed to loadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpfMaps struct {
 	Devices *ebpf.Map `ebpf:"devices"`
+	Dropped *ebpf.Map `ebpf:"dropped"`
 	Events  *ebpf.Map `ebpf:"events"`
 	Ioctls  *ebpf.Map `ebpf:"ioctls"`
 }
@@ -137,6 +140,7 @@ type bpfMaps struct {
 func (m *bpfMaps) Close() error {
 	return _BpfClose(
 		m.Devices,
+		m.Dropped,
 		m.Events,
 		m.Ioctls,
 	)
