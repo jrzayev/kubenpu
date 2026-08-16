@@ -1,0 +1,53 @@
+name: bpf
+
+on:
+  pull_request:
+    paths:
+      - 'bpf/**'
+      - 'pkg/loader/**'
+      - '.github/workflows/bpf.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'bpf/**'
+      - 'pkg/loader/**'
+      - '.github/workflows/bpf.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bpf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bpf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm dwarves libbpf-dev
+
+      - name: compile eBPF program
+        run: |
+          clang -target bpf -D__TARGET_ARCH_x86 -O2 -g \
+            -I bpf -c bpf/drm_common.bpf.c -o /tmp/drm_common.bpf.o
+
+      - name: check struct event layout
+        run: |
+          pahole -C event /tmp/drm_common.bpf.o | tee /tmp/pahole.txt
+          grep -q 'size: 32' /tmp/pahole.txt
+          ! grep -q 'hole' /tmp/pahole.txt
+
+      - name: generated bindings are up to date
+        run: |
+          go generate ./...
+          git diff --exit-code pkg/loader/

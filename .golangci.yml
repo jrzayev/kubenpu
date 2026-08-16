@@ -1,0 +1,48 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - errorlint
+    - bodyclose
+    - misspell
+    - revive
+    - gosec
+    - copyloopvar
+    - nilerr
+    - unconvert
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  govet:
+    enable:
+      - shadow
+  revive:
+    rules:
+      - name: exported
+        disabled: true
+  gosec:
+    excludes:
+      - G103
+      - G304
+
+issues:
+  exclude-rules:
+    - path: bpf_x86_bpfel\.go
+      linters:
+        - unused
+        - revive
+        - staticcheck
+        - errcheck
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+  max-issues-per-linter: 0
+  max-same-issues: 0

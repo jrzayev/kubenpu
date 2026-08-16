@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "kubenpu.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubenpu.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "kubenpu.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    {{- toYaml .Values.updateStrategy | nindent 4 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kubenpu.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ toYaml .Values.config | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      hostPID: false
+      containers:
+        - name: agent
+          image: {{ include "kubenpu.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+              protocol: TCP
+          env:
+            - name: KUBENPU_PORT
+              value: {{ .Values.metrics.port | quote }}
+            - name: KUBENPU_DEBUG
+              value: {{ .Values.config.debug | quote }}
+            - name: KUBENPU_INTERVAL
+              value: {{ .Values.config.intervalSeconds | quote }}
+            - name: KUBENPU_CRI_TIMEOUT
+              value: {{ .Values.config.criTimeoutSeconds | quote }}
+            - name: KUBENPU_SHUTDOWN_TIMEOUT
+              value: {{ .Values.config.shutdownTimeoutSeconds | quote }}
+            - name: KUBENPU_CACHE_TTL
+              value: {{ .Values.config.cacheTTLSeconds | quote }}
+            - name: KUBENPU_QUEUE_SIZE
+              value: {{ .Values.config.queueSize | quote }}
+            - name: KUBENPU_DRI_PATH
+              value: {{ .Values.config.driPath | quote }}
+            - name: KUBENPU_ACCEL_PATH
+              value: {{ .Values.config.accelPath | quote }}
+            - name: KUBENPU_SYSFS_DRI_PATH
+              value: {{ .Values.config.sysfsDriPath | quote }}
+            - name: KUBENPU_SYSFS_ACCEL_PATH
+              value: {{ .Values.config.sysfsAccelPath | quote }}
+            - name: KUBENPU_CGROUP_ROOT_PATH
+              value: {{ .Values.config.cgroupRootPath | quote }}
+            - name: KUBENPU_CRI_SOCKET_PATH
+              value: {{ .Values.config.criSocketPath | quote }}
+            - name: KUBENPU_APP_VERSION
+              value: {{ .Chart.AppVersion | quote }}
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: metrics
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: cgroupfs
+              mountPath: {{ .Values.config.cgroupRootPath }}
+              readOnly: true
+            - name: sysfs
+              mountPath: /sys
+              readOnly: true
+            - name: dev
+              mountPath: /dev
+              readOnly: true
+            - name: cri-socket
+              mountPath: {{ include "kubenpu.criSocketDir" . }}
+              readOnly: true
+      volumes:
+        - name: cgroupfs
+          hostPath:
+            path: {{ .Values.config.cgroupRootPath }}
+            type: Directory
+        - name: sysfs
+          hostPath:
+            path: /sys
+            type: Directory
+        - name: dev
+          hostPath:
+            path: /dev
+            type: Directory
+        - name: cri-socket
+          hostPath:
+            path: {{ include "kubenpu.criSocketDir" . }}
+            type: Directory
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

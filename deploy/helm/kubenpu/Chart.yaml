@@ -1,0 +1,25 @@
+apiVersion: v2
+name: kubenpu
+description: Per-pod visibility into NPU and accelerator usage on Kubernetes
+type: application
+
+version: 0.1.0
+appVersion: "0.1.0"
+
+kubeVersion: ">=1.25.0-0"
+
+home: https://github.com/jrzayev/kubenpu
+sources:
+  - https://github.com/jrzayev/kubenpu
+
+keywords:
+  - ebpf
+  - npu
+  - gpu
+  - accelerator
+  - observability
+  - prometheus
+
+maintainers:
+  - name: Javid Rzayev
+    url: https://github.com/jrzayev

@@ -1,0 +1,90 @@
+image:
+  repository: ghcr.io/jrzayev/kubenpu
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+config:
+  debug: 0
+  intervalSeconds: 5
+  criTimeoutSeconds: 5
+  shutdownTimeoutSeconds: 5
+  cacheTTLSeconds: 60
+  queueSize: 4096
+  driPath: /dev/dri
+  accelPath: /dev/accel
+  sysfsDriPath: /sys/class/drm
+  sysfsAccelPath: /sys/class/accel
+  cgroupRootPath: /sys/fs/cgroup
+  criSocketPath: /run/containerd/containerd.sock
+
+metrics:
+  port: 8080
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  labels: {}
+  relabelings: []
+  metricRelabelings: []
+
+securityContext:
+  runAsUser: 0
+  runAsNonRoot: false
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  privileged: false
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - BPF
+      - PERFMON
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+terminationGracePeriodSeconds: 30
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 20
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+
+priorityClassName: ""
+
+nodeSelector: {}
+
+tolerations:
+  - operator: Exists
+
+affinity: {}
+
+podAnnotations: {}
+podLabels: {}

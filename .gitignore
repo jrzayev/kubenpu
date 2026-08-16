@@ -1,3 +1,6 @@
-.idea
+.idea/
 CMakeLists.txt
+cmake-build-*/
 bin/
+*.tgz
+.DS_Store

@@ -1,0 +1,85 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  CHART_PATH: deploy/helm/kubenpu
+
+jobs:
+  verify-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: check
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          APP_VERSION=$(grep '^appVersion:' "$CHART_PATH/Chart.yaml" | awk '{print $2}' | tr -d '"')
+          CHART_VERSION=$(grep '^version:' "$CHART_PATH/Chart.yaml" | awk '{print $2}' | tr -d '"')
+
+          echo "tag=$TAG appVersion=$APP_VERSION chartVersion=$CHART_VERSION"
+
+          if [ "$TAG" != "$APP_VERSION" ]; then
+            echo "::error::tag v$TAG does not match Chart.yaml appVersion $APP_VERSION"
+            exit 1
+          fi
+          if [ "$TAG" != "$CHART_VERSION" ]; then
+            echo "::error::tag v$TAG does not match Chart.yaml version $CHART_VERSION"
+            exit 1
+          fi
+
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: verify-version
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: |
+            VERSION=${{ needs.verify-version.outputs.version }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.verify-version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: package and push helm chart
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm lint "$CHART_PATH"
+          helm package "$CHART_PATH" --destination /tmp
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            helm registry login "$REGISTRY" -u "${{ github.actor }}" --password-stdin
+          helm push "/tmp/kubenpu-${{ needs.verify-version.outputs.version }}.tgz" \
+            "oci://$REGISTRY/${{ github.repository_owner }}/charts"
+
+      - name: create github release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes
