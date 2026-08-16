@@ -4,10 +4,10 @@
 
 package hw
 
-type Kind int
+type Kind uint8
 
 const (
-	KindUnknown Kind = iota // Was added specially if somehow we will not check and we will get an unknown kind
+	KindUnknown Kind = iota
 	KindSubmit
 	KindAlloc
 	KindWait

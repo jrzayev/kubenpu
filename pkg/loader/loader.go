@@ -60,7 +60,7 @@ func NewLoader(debug bool) (*Loader, error) {
 	if err := loadBpfObjects(&l.bpfObjects, opt); err != nil {
 		var verifierErr *ebpf.VerifierError
 		if errors.As(err, &verifierErr) {
-			return nil, fmt.Errorf("failed to load bpf objects: %+v", verifierErr)
+			return nil, verifierErr
 		}
 
 		return nil, fmt.Errorf("failed to load bpf objects: %w", err)

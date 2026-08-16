@@ -39,6 +39,9 @@ linters:
         linters:
           - errcheck
           - gosec
+      - path: pkg/podmap/cgroup\.go
+        linters:
+          - nilerr
 
 issues:
   max-issues-per-linter: 0

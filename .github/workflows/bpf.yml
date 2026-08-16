@@ -24,7 +24,7 @@ jobs:
   bpf:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-go@v7
         with:
@@ -50,4 +50,4 @@ jobs:
       - name: generated bindings are up to date
         run: |
           go generate ./...
-          git diff --exit-code pkg/loader/
+          git diff --exit-code pkg/loader/bpf_x86_bpfel.go

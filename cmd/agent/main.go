@@ -62,15 +62,14 @@ func main() {
 		fmt.Println("Debug mode enabled")
 	}
 
-	l, err := loader.NewLoader(debugFlag != nil && *debugFlag)
+	l, err := loader.NewLoader(*debugFlag)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%+v", err)
 	}
 
 	defer func(loader *loader.Loader) {
-		err := loader.Close()
-		if err != nil {
-			log.Print(err)
+		if cerr := loader.Close(); cerr != nil {
+			log.Print(cerr)
 		}
 	}(l)
 
@@ -143,9 +142,8 @@ func main() {
 	collector.SetKernelDroppedSource(l.DroppedEvents)
 
 	defer func(podMap *podmap.PodMap) {
-		err := podMap.Close()
-		if err != nil {
-			log.Print(err)
+		if cerr := podMap.Close(); cerr != nil {
+			log.Print(cerr)
 		}
 	}(p)
 
@@ -161,8 +159,8 @@ func main() {
 	)
 
 	go func() {
-		if err := srv.Run(); err != nil {
-			log.Printf("Metrics server error: %v", err)
+		if rerr := srv.Run(); rerr != nil {
+			log.Printf("Metrics server error: %v", rerr)
 		}
 	}()
 

@@ -67,7 +67,7 @@ func discoverDevices(devPath, sysfsPath string, devices map[string]*Device) erro
 			continue
 		}
 
-		rdev := uint64(stat.Rdev)
+		rdev := stat.Rdev
 		major := unix.Major(rdev)
 		minor := unix.Minor(rdev)
 
