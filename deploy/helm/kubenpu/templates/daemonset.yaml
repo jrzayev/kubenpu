@@ -96,9 +96,14 @@ spec:
             - name: sysfs
               mountPath: /sys
               readOnly: true
-            - name: dev
-              mountPath: /dev
+            - name: dri
+              mountPath: {{ .Values.config.driPath }}
               readOnly: true
+            {{- if .Values.mountAccel }}
+            - name: accel
+              mountPath: {{ .Values.config.accelPath }}
+              readOnly: true
+            {{- end }}
             - name: cri-socket
               mountPath: {{ include "kubenpu.criSocketDir" . }}
               readOnly: true
@@ -111,10 +116,16 @@ spec:
           hostPath:
             path: /sys
             type: Directory
-        - name: dev
+        - name: dri
           hostPath:
-            path: /dev
+            path: {{ .Values.config.driPath }}
             type: Directory
+        {{- if .Values.mountAccel }}
+        - name: accel
+          hostPath:
+            path: {{ .Values.config.accelPath }}
+            type: Directory
+        {{- end }}
         - name: cri-socket
           hostPath:
             path: {{ include "kubenpu.criSocketDir" . }}

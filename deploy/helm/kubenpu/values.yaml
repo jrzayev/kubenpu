@@ -21,6 +21,8 @@ config:
   cgroupRootPath: /sys/fs/cgroup
   criSocketPath: /run/containerd/containerd.sock
 
+mountAccel: false
+
 metrics:
   port: 8080
 
