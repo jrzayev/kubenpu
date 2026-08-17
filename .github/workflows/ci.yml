@@ -44,8 +44,8 @@ jobs:
       - name: helm lint
         run: |
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-          helm lint deploy/helm/kubenpu
-          helm template deploy/helm/kubenpu > /dev/null
+          helm lint deploy/helm
+          helm template deploy/helm > /dev/null
 
   lint:
     runs-on: ubuntu-latest
