@@ -10,7 +10,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  CHART_PATH: deploy/helm/kubenpu
+  CHART_PATH: deploy/helm
 
 jobs:
   verify-version:
