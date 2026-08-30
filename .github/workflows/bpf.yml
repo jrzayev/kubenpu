@@ -2,16 +2,8 @@ name: bpf
 
 on:
   pull_request:
-    paths:
-      - 'bpf/**'
-      - 'pkg/loader/**'
-      - '.github/workflows/bpf.yml'
   push:
     branches: [main]
-    paths:
-      - 'bpf/**'
-      - 'pkg/loader/**'
-      - '.github/workflows/bpf.yml'
 
 permissions:
   contents: read
