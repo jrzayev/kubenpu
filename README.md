@@ -49,19 +49,15 @@ kubenpu_events_dropped_total{reason}
 kubenpu_cgroup_index_rebuilds_total
 ```
 
-`device` is the PCI address it survives reboots, unlike `card1`, whose minor
-number can change. The readable node name lives in `kubenpu_device_info`.
+`device` is the PCI address, which survives reboots. `card1` does not, because
+its minor number can change. The node name is in `kubenpu_device_info`.
 
-Everything with a `pod` label is counted, not estimated. KubeNPU does not split
-device utilization between pods: measured on Intel UHD 620, one workload issued
-4× more submissions while consuming 7× less device time, so attributing by
-submission count reports the picture backwards.
+Counts are exact, never estimated. They are call counts, not utilization: on
+Intel UHD 620 a workload with 4× more submissions used 7× less device time.
 
-Counting starts when the agent starts, not when the pod starts. A pod that was
-already running keeps being counted from that moment on, but whatever it did
-before is not there — most visibly `kind="alloc"`, since buffers are allocated
-once during initialisation. After a DaemonSet rollout that phase is gone for
-every running pod.
+Counting starts with the agent, not with the pod. Anything a pod did before
+that is missing, mostly `kind="alloc"`, which happens once at startup. The same
+applies after every DaemonSet rollout.
 
 ## Quick test
 
@@ -110,6 +106,18 @@ i915    8086:5917  0000:00:02.0  226:1,226:128  i915
 This reads sysfs only and needs no privileges. If your device shows up with
 `-` in the VENDOR column, KubeNPU found the hardware but has no implementation
 for it yet.
+
+### Using your own vmlinux.h
+
+`bpf/vmlinux.h` is checked in and works on any kernel with BTF, since the
+program is CO-RE and relocates field offsets at load time. To regenerate it
+from your own kernel:
+
+```shell
+bpftool btf dump file /sys/kernel/btf/vmlinux format c > bpf/vmlinux.h
+make generate
+make build
+```
 
 ### Kubernetes
 
