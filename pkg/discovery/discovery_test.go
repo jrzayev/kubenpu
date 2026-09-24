@@ -117,7 +117,7 @@ func TestGetDeviceAddress(t *testing.T) {
 }
 
 func TestDiscover(t *testing.T) {
-	t.Run("missing dri path returns error", func(t *testing.T) {
+	t.Run("missing dri and accel paths returns empty result", func(t *testing.T) {
 		paths := Paths{
 			DriPath:        filepath.Join(t.TempDir(), "dri"),
 			AccelPath:      filepath.Join(t.TempDir(), "accel"),
@@ -127,12 +127,35 @@ func TestDiscover(t *testing.T) {
 
 		devices, err := Discover(paths)
 
+		if err != nil {
+			t.Fatalf("Discover() error = %v, want nil", err)
+		}
+
+		if len(devices) != 0 {
+			t.Errorf("Discover() returned %d devices, want 0", len(devices))
+		}
+	})
+
+	t.Run("unreadable dri path returns error", func(t *testing.T) {
+		root := t.TempDir()
+		driPath := filepath.Join(root, "dri")
+		if err := os.WriteFile(driPath, nil, 0o644); err != nil {
+			t.Fatalf("WriteFile(dri) error = %v", err)
+		}
+
+		devices, err := Discover(Paths{
+			DriPath:        driPath,
+			AccelPath:      filepath.Join(root, "missing-accel"),
+			SysfsDriPath:   filepath.Join(root, "sysfs-dri"),
+			SysfsAccelPath: filepath.Join(root, "missing-sysfs-accel"),
+		})
+
 		if err == nil {
 			t.Fatalf("Discover() error = nil, want error")
 		}
 
-		if !errors.Is(err, os.ErrNotExist) {
-			t.Errorf("Discover() error = %v, want os.ErrNotExist", err)
+		if errors.Is(err, os.ErrNotExist) {
+			t.Errorf("Discover() error = %v, want an error other than os.ErrNotExist", err)
 		}
 
 		if devices != nil {
