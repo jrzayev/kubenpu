@@ -154,7 +154,7 @@ means `cgroupfs`: the agent will start, find your devices and report zero pods.
 | driver | device                | ioctls              | status    | hardware                   | kernel      | cluster                                    | workload               |
 |--------|-----------------------|---------------------|-----------|----------------------------|-------------|--------------------------------------------|------------------------|
 | `i915` | Intel iGPU            | submit, alloc, wait | validated | Intel UHD 620, `8086:5917` | 7.0, Ubuntu | k3s, containerd, cgroup v2, systemd driver | `ffmpeg`, `h264_vaapi` |
-| `ivpu` | Intel NPU, Core Ultra | submit, alloc, wait | untested  | -                          | -           | -                                          | -                      |
+| `ivpu` | Intel NPU, Core Ultra | submit, alloc, wait | validated | Intel Arrow Lake NPU, `8086:ad1d` | 7.0, Ubuntu 24.04 (KVM guest, VFIO, `force_snoop=1`) | k3s, containerd, cgroup v2, systemd driver | OpenVINO `benchmark_app -d NPU` |
 
 
 ## NVIDIA is not supported
