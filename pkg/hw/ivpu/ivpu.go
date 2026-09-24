@@ -20,7 +20,7 @@ func (v *Vendor) Name() string {
 }
 
 func (v *Vendor) Match(d discovery.Device) bool {
-	return d.DriverName == "ivpu"
+	return d.DriverName == "intel_vpu"
 }
 
 func (v *Vendor) Weight(cmd uint32, payload []byte) uint64 {

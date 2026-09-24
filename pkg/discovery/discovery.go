@@ -25,7 +25,9 @@ func Discover(paths Paths) ([]Device, error) {
 	devices := make(map[string]*Device)
 
 	if err := discoverDevices(paths.DriPath, paths.SysfsDriPath, devices); err != nil {
-		return nil, err
+		if !errors.Is(err, fs.ErrNotExist) {
+			return nil, err
+		}
 	}
 
 	if err := discoverDevices(paths.AccelPath, paths.SysfsAccelPath, devices); err != nil {
