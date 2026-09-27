@@ -23,19 +23,13 @@ jobs:
       - id: check
         run: |
           TAG="${GITHUB_REF_NAME#v}"
-          APP_VERSION=$(grep '^appVersion:' "$CHART_PATH/Chart.yaml" | awk '{print $2}' | tr -d '"')
-          CHART_VERSION=$(grep '^version:' "$CHART_PATH/Chart.yaml" | awk '{print $2}' | tr -d '"')
+          FILE_VERSION=$(tr -d '[:space:]' < VERSION)
 
-          echo "tag=$TAG appVersion=$APP_VERSION chartVersion=$CHART_VERSION"
-
-          if [ "$TAG" != "$APP_VERSION" ]; then
-            echo "::error::tag v$TAG does not match Chart.yaml appVersion $APP_VERSION"
+          if [ "$TAG" != "$FILE_VERSION" ]; then
+            echo "::error::tag v$TAG does not match VERSION $FILE_VERSION"
             exit 1
           fi
-          if [ "$TAG" != "$CHART_VERSION" ]; then
-            echo "::error::tag v$TAG does not match Chart.yaml version $CHART_VERSION"
-            exit 1
-          fi
+          make check-version
 
           echo "version=$TAG" >> "$GITHUB_OUTPUT"
 

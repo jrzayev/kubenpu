@@ -3,7 +3,7 @@
     name: 'kubenpu',
     namespace: 'kubenpu',
     createNamespace: true,
-    version: '0.1.1',
+    version: std.stripChars(importstr '../../../../VERSION', ' \n'),
 
     image: {
       repository: 'ghcr.io/jrzayev/kubenpu',
@@ -122,7 +122,6 @@
     KUBENPU_SYSFS_ACCEL_PATH: c.config.sysfsAccelPath,
     KUBENPU_CGROUP_ROOT_PATH: c.config.cgroupRootPath,
     KUBENPU_CRI_SOCKET_PATH: c.config.criSocketPath,
-    KUBENPU_APP_VERSION: c.version,
   },
 
   local mount(name, path) = { name: name, mountPath: path, readOnly: true },

@@ -123,7 +123,7 @@ make build
 
 #### Helm
 ```shell
-helm install kubenpu deploy/helm/kubenpu -n kubenpu --create-namespace
+helm install kubenpu deploy/helm -n kubenpu --create-namespace
 ```
 
 ```shell

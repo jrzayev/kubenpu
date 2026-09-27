@@ -70,8 +70,6 @@ spec:
               value: "/sys/fs/cgroup"
             - name: KUBENPU_CRI_SOCKET_PATH
               value: "/run/containerd/containerd.sock"
-            - name: KUBENPU_APP_VERSION
-              value: "0.1.1"
             - name: NODE_NAME
               valueFrom:
                 fieldRef:

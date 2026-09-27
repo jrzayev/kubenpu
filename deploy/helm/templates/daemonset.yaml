@@ -71,8 +71,6 @@ spec:
               value: {{ .Values.config.cgroupRootPath | quote }}
             - name: KUBENPU_CRI_SOCKET_PATH
               value: {{ .Values.config.criSocketPath | quote }}
-            - name: KUBENPU_APP_VERSION
-              value: {{ .Chart.AppVersion | quote }}
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
