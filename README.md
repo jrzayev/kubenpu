@@ -121,6 +121,7 @@ make build
 
 ### Kubernetes
 
+#### Helm
 ```shell
 helm install kubenpu deploy/helm/kubenpu -n kubenpu --create-namespace
 ```
@@ -131,6 +132,25 @@ curl -s localhost:8080/metrics | grep kubenpu_ioctl_total
 ```
 
 Set `serviceMonitor.enabled=true` if you run the Prometheus Operator.
+
+#### Kustomize
+
+```shell
+kubectl apply -k deploy/kustomize/base
+```
+
+Optional components: `deploy/kustomize/components/servicemonitor` and
+`deploy/kustomize/components/accel`.
+
+#### Grafana Tanka
+
+```shell
+cd deploy/tanka
+tk env set environments/default --server=<api-server-url>
+tk apply environments/default
+```
+
+Override `_config` in `environments/default/main.jsonnet`, same keys as Helm `values.yaml`.
 
 ## Requirements
 

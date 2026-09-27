@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kubenpu
+  labels:
+    app.kubernetes.io/name: kubenpu
+    app.kubernetes.io/instance: kubenpu
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubenpu
+      app.kubernetes.io/instance: kubenpu
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubenpu
+        app.kubernetes.io/instance: kubenpu
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      hostPID: false
+      containers:
+        - name: agent
+          image: ghcr.io/jrzayev/kubenpu
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            privileged: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - BPF
+                - PERFMON
+          ports:
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: KUBENPU_PORT
+              value: "8080"
+            - name: KUBENPU_DEBUG
+              value: "0"
+            - name: KUBENPU_INTERVAL
+              value: "5"
+            - name: KUBENPU_CRI_TIMEOUT
+              value: "5"
+            - name: KUBENPU_SHUTDOWN_TIMEOUT
+              value: "5"
+            - name: KUBENPU_CACHE_TTL
+              value: "60"
+            - name: KUBENPU_QUEUE_SIZE
+              value: "4096"
+            - name: KUBENPU_DRI_PATH
+              value: "/dev/dri"
+            - name: KUBENPU_ACCEL_PATH
+              value: "/dev/accel"
+            - name: KUBENPU_SYSFS_DRI_PATH
+              value: "/sys/class/drm"
+            - name: KUBENPU_SYSFS_ACCEL_PATH
+              value: "/sys/class/accel"
+            - name: KUBENPU_CGROUP_ROOT_PATH
+              value: "/sys/fs/cgroup"
+            - name: KUBENPU_CRI_SOCKET_PATH
+              value: "/run/containerd/containerd.sock"
+            - name: KUBENPU_APP_VERSION
+              value: "0.1.1"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: metrics
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: cgroupfs
+              mountPath: /sys/fs/cgroup
+              readOnly: true
+            - name: sysfs
+              mountPath: /sys
+              readOnly: true
+            - name: dri
+              mountPath: /dev/dri
+              readOnly: true
+            - name: cri-socket
+              mountPath: /run/containerd
+              readOnly: true
+      volumes:
+        - name: cgroupfs
+          hostPath:
+            path: /sys/fs/cgroup
+            type: Directory
+        - name: sysfs
+          hostPath:
+            path: /sys
+            type: Directory
+        - name: dri
+          hostPath:
+            path: /dev/dri
+            type: Directory
+        - name: cri-socket
+          hostPath:
+            path: /run/containerd
+            type: Directory
+      tolerations:
+        - operator: Exists

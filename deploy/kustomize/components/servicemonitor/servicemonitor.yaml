@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kubenpu
+  namespace: kubenpu
+  labels:
+    app.kubernetes.io/name: kubenpu
+    app.kubernetes.io/instance: kubenpu
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubenpu
+      app.kubernetes.io/instance: kubenpu
+  namespaceSelector:
+    matchNames:
+      - kubenpu
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
