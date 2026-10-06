@@ -159,19 +159,17 @@ Override `_config` in `environments/default/main.jsonnet`, same keys as Helm `va
 ## Requirements
 
 - Linux 6.1+ with BTF (`CONFIG_DEBUG_INFO_BTF=y`)
-- cgroup v2 with the systemd driver - `cgroupfs` layouts are not parsed yet
+- cgroup v2, with either the systemd or the cgroupfs cgroup driver
 - a CRI v1 runtime, socket reachable by the agent
 
-Check both cgroup settings before installing, a mismatch on the second one is
-silent:
+Check that the node uses cgroup v2:
 
 ```shell
 ls /sys/fs/cgroup/cgroup.controllers
-ls /sys/fs/cgroup/ | grep kubepods
 ```
 
-`kubepods.slice` means the systemd driver and is supported. Plain `kubepods`
-means `cgroupfs`: the agent will start, find your devices and report zero pods.
+Both kubelet cgroup drivers are supported: `kubepods.slice` under
+`/sys/fs/cgroup` is the systemd driver, plain `kubepods` is cgroupfs.
 
 ## Tested Hardware
 
