@@ -4,6 +4,8 @@
 
 KubeNPU counts accelerator calls per pod with eBPF and exports them to Prometheus.
 
+![Per-pod ioctl counters for an ffmpeg pod on an Intel iGPU](docs/images/metrics-igpu-ffmpeg.png)
+
 ## How it works
 
 Every DRM and accel driver routes userspace through one kernel function,
@@ -107,6 +109,8 @@ This reads sysfs only and needs no privileges. If your device shows up with
 `-` in the VENDOR column, KubeNPU found the hardware but has no implementation
 for it yet.
 
+![kubenpuctl devices showing a supported i915 iGPU](docs/images/kubenpuctl-devices-igpu-ffmpeg.png)
+
 ### Using your own vmlinux.h
 
 `bpf/vmlinux.h` is checked in and works on any kernel with BTF, since the
@@ -174,6 +178,7 @@ means `cgroupfs`: the agent will start, find your devices and report zero pods.
 | driver | device                | ioctls              | status    | hardware                   | kernel      | cluster                                    | workload               |
 |--------|-----------------------|---------------------|-----------|----------------------------|-------------|--------------------------------------------|------------------------|
 | `i915` | Intel iGPU            | submit, alloc, wait | validated | Intel UHD 620, `8086:5917` | 7.0, Ubuntu | k3s, containerd, cgroup v2, systemd driver | `ffmpeg`, `h264_vaapi` |
+| `i915` | Intel iGPU | submit, alloc, wait | validated | Intel UHD 620, `8086:5917` | 7.0, Ubuntu 26.04 (Proxmox KVM guest, VFIO) | kubeadm v1.37, containerd 2.2, cgroup v2, cgroupfs driver | `ffmpeg`, `h264_vaapi` |
 | `ivpu` | Intel NPU, Core Ultra | submit, alloc, wait | validated | Intel Arrow Lake NPU, `8086:ad1d` | 7.0, Ubuntu 24.04 (KVM guest, VFIO, `force_snoop=1`) | k3s, containerd, cgroup v2, systemd driver | OpenVINO `benchmark_app -d NPU` |
 
 

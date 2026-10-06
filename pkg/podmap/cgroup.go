@@ -31,51 +31,28 @@ func parseCgroupPath(path string) (*ToIDs, error) {
 	}
 
 	parts := strings.Split(filepath.ToSlash(path), "/")
-
-	var podUID string
-	var containerID string
-
-	for _, part := range parts {
-		if strings.HasPrefix(part, "kubepods-") &&
-			strings.HasSuffix(part, ".slice") {
-
-			const marker = "-pod"
-
-			if _, after, ok := strings.Cut(part, marker); ok {
-				pod := strings.TrimSuffix(
-					after,
-					".slice",
-				)
-
-				podUID = strings.ReplaceAll(pod, "_", "-")
+	isKubepods := false
+	for i, part := range parts {
+		if !isKubepods {
+			if !strings.HasPrefix(part, "kubepods") {
+				continue
 			}
+			isKubepods = true
 		}
-
-		if !strings.HasSuffix(part, ".scope") {
+		podUID, ok := podUIDFromPart(part)
+		if !ok {
 			continue
 		}
-
-		part = strings.TrimSuffix(part, ".scope")
-
-		idx := strings.LastIndex(part, "-")
-		if idx == -1 {
-			return nil, fmt.Errorf("invalid container scope: %q", part)
+		if i+1 >= len(parts) || parts[i+1] == "" {
+			return nil, fmt.Errorf("container ID not found in cgroup path %q", path)
 		}
-		containerID = part[idx+1:]
+		containerID, err := containerIDFromPart(parts[i+1])
+		if err != nil {
+			return nil, fmt.Errorf("%w in cgroup path %q", err, path)
+		}
+		return &ToIDs{PodUID: podUID, ContainerID: containerID}, nil
 	}
-
-	if podUID == "" {
-		return nil, fmt.Errorf("pod UID not found in %q", path)
-	}
-
-	if containerID == "" {
-		return nil, fmt.Errorf("container ID not found in cgroup path %q", path)
-	}
-
-	return &ToIDs{
-		PodUID:      podUID,
-		ContainerID: containerID,
-	}, nil
+	return nil, fmt.Errorf("pod UID not found in %q", path)
 }
 
 func buildCgroupInodeMap(root string) (map[uint64]string, error) {
@@ -154,4 +131,47 @@ func (idx *Index) ParseCgroupToIDs(cgroupID uint64) (*ToIDs, error) {
 	}
 
 	return parseCgroupPath(path)
+}
+
+func podUIDFromPart(part string) (string, bool) {
+	if strings.HasPrefix(part, "kubepods-") && strings.HasSuffix(part, ".slice") {
+		_, uid, ok := strings.Cut(strings.TrimSuffix(part, ".slice"), "-pod")
+		if !ok || uid == "" {
+			return "", false
+		}
+		return strings.ReplaceAll(uid, "_", "-"), true
+	}
+
+	if uid, ok := strings.CutPrefix(part, "pod"); ok && uid != "" {
+		return uid, true
+	}
+
+	return "", false
+}
+
+func containerIDFromPart(part string) (string, error) {
+	id := strings.TrimSuffix(part, ".scope")
+	if idx := strings.LastIndex(id, "-"); idx != -1 {
+		id = id[idx+1:]
+	}
+
+	if !isHex(id) {
+		return "", fmt.Errorf("invalid container cgroup %q", part)
+	}
+
+	return id, nil
+}
+
+func isHex(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	for _, c := range s {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+
+	return true
 }
