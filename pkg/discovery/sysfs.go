@@ -63,3 +63,11 @@ func ReadUevent(drmPath string) (map[string]string, error) {
 
 	return uevent, nil
 }
+
+func ReadNumaNode(deviceSysfsPath string) string {
+	data, err := os.ReadFile(filepath.Join(deviceSysfsPath, "numa_node"))
+	if err != nil {
+		return "-1"
+	}
+	return strings.TrimSpace(string(data))
+}

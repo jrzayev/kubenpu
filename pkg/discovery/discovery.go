@@ -98,6 +98,7 @@ func discoverDevices(devPath, sysfsPath string, devices map[string]*Device) erro
 				SysfsPath:  deviceSysfsPath,
 				PciID:      uevent["PCI_ID"],
 				PciAddress: deviceAddress,
+				NumaNode:   ReadNumaNode(deviceSysfsPath),
 				Nodes:      []Node{n},
 			}
 

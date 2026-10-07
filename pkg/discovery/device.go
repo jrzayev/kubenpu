@@ -15,5 +15,6 @@ type Device struct {
 	SysfsPath  string
 	PciID      string
 	PciAddress string
+	NumaNode   string
 	Nodes      []Node
 }

@@ -37,10 +37,11 @@ type key struct {
 }
 
 type deviceKey struct {
-	device string
-	vendor string
-	driver string
-	pciID  string
+	device   string
+	vendor   string
+	driver   string
+	pciID    string
+	numaNode string
 }
 
 type Collector struct {
@@ -91,7 +92,7 @@ func NewCollector() *Collector {
 		deviceInfoDesc: prometheus.NewDesc(
 			"kubenpu_device_info",
 			"Device information",
-			[]string{"device", "vendor", "driver", "pci_id"},
+			[]string{"device", "vendor", "driver", "pci_id", "numa_node"},
 			nil,
 		),
 	}
@@ -163,6 +164,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			k.vendor,
 			k.driver,
 			k.pciID,
+			k.numaNode,
 		)
 	}
 }
@@ -203,14 +205,15 @@ func (c *Collector) SetKernelDroppedSource(source func() (uint64, error)) {
 	c.kernelDroppedSource = source
 }
 
-func (c *Collector) SetDeviceInfo(device string, vendor string, driver string, pciID string) {
+func (c *Collector) SetDeviceInfo(device string, vendor string, driver string, pciID string, numaNode string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	c.deviceInfo[deviceKey{
-		device: device,
-		vendor: vendor,
-		driver: driver,
-		pciID:  pciID,
+		device:   device,
+		vendor:   vendor,
+		driver:   driver,
+		pciID:    pciID,
+		numaNode: numaNode,
 	}] = struct{}{}
 }

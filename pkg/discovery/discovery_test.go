@@ -193,3 +193,22 @@ func TestDiscover(t *testing.T) {
 		}
 	})
 }
+
+func TestReadNumaNode(t *testing.T) {
+	t.Run("reads numa node", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "numa_node"), []byte("1\n"), 0o644); err != nil {
+			t.Fatalf("WriteFile(numa_node) error = %v", err)
+		}
+
+		if got := ReadNumaNode(dir); got != "1" {
+			t.Errorf("ReadNumaNode() = %q, want %q", got, "1")
+		}
+	})
+
+	t.Run("missing file returns -1", func(t *testing.T) {
+		if got := ReadNumaNode(t.TempDir()); got != "-1" {
+			t.Errorf("ReadNumaNode() = %q, want %q", got, "-1")
+		}
+	})
+}

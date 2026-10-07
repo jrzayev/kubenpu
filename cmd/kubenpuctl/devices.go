@@ -38,7 +38,7 @@ var devicesCmd = &cobra.Command{
 			_ = w.Flush()
 		}(w)
 
-		_, _ = fmt.Fprintln(w, "DRIVER\tPCI ID\tADDRESS\tNODES\tVENDOR")
+		_, _ = fmt.Fprintln(w, "DRIVER\tPCI ID\tADDRESS\tNODES\tVENDOR\tNUMA")
 
 		for _, device := range devices {
 			nodes := make([]string, 0, len(device.Nodes))
@@ -58,12 +58,13 @@ var devicesCmd = &cobra.Command{
 
 			_, _ = fmt.Fprintf(
 				w,
-				"%s\t%s\t%s\t%s\t%s\n",
+				"%s\t%s\t%s\t%s\t%s\t%s\n",
 				device.DriverName,
 				pciID,
 				device.PciAddress,
 				strings.Join(nodes, ","),
 				vendorName,
+				device.NumaNode,
 			)
 		}
 

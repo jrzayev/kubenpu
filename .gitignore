@@ -4,3 +4,4 @@ cmake-build-*/
 bin/
 *.tgz
 .DS_Store
+ffmpeg-vaapi-test-pod.yaml

@@ -101,6 +101,7 @@ func main() {
 			vendor.Name(),
 			device.DriverName,
 			device.PciID,
+			device.NumaNode,
 		)
 
 		for _, node := range device.Nodes {

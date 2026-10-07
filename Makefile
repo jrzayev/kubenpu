@@ -31,6 +31,9 @@ test:
 vet:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go vet ./...
 
+fmt:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go fmt ./...
+
 clean:
 	rm -rf bin
 

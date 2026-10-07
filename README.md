@@ -46,7 +46,7 @@ Unlike kernel function names, they do not change between releases.
 
 ```
 kubenpu_ioctl_total{pod,namespace,container,device,vendor,kind="submit|alloc|wait"}
-kubenpu_device_info{device,vendor,driver,pci_id}
+kubenpu_device_info{device,vendor,driver,pci_id,numa_node}
 kubenpu_events_dropped_total{reason}
 kubenpu_cgroup_index_rebuilds_total
 ```
@@ -188,6 +188,18 @@ Use [DCGM exporter](https://github.com/NVIDIA/dcgm-exporter).
 ## Adding your hardware
 
 Copy `pkg/hw/ivpu/` and fill in the numbers from the kernel's uapi header.
+
+## Roadmap
+
+- More hardware, starting with accelerators used in production, such as
+  Qualcomm Cloud AI 100 (`qaic`, available on AWS DL2q) and Intel Gaudi
+  (`habanalabs`). Both drivers go through `drm_ioctl`.
+- TPUs and other accelerators whose drivers do not use `drm_ioctl`. This needs
+  a different hook and is still being researched.
+- `sched_ext` placement hints: run each task on CPUs close to the
+  accelerator it uses, without changing the application.
+- BPF LSM, so KubeNPU could also allow or block a pod's access to a
+  device, not only observe it.
 
 ## License
 
