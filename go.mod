@@ -8,7 +8,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/sys v0.50.0
 	google.golang.org/grpc v1.85.0
-	k8s.io/cri-api v0.37.2
+	k8s.io/cri-api v0.37.3
 )
 
 require (
